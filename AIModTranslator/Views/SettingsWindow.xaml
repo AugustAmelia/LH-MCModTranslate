@@ -1,0 +1,215 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:material="using:Material.Icons.Avalonia"
+        Title="Settings" MinWidth="550"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        x:Class="AIModTranslator.Views.SettingsWindow">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,15" />
+
+        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+            <TabItem Header="AI Providers">
+                <ScrollViewer>
+                    <StackPanel Margin="0,15,12,0">
+                        <TextBlock Text="Provider:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding Provider}" 
+                                  Margin="0,0,0,15" HorizontalAlignment="Stretch" />
+
+                        <StackPanel IsVisible="{Binding IsOpenAISelected}">
+                            <TextBlock Text="OpenAI API Key:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding OpenAIApiKey}" Watermark="sk-..." Margin="0,0,0,5" />
+                            <TextBlock Text="The key is encrypted locally with DataProtection." 
+                                       FontSize="11" Foreground="Gray" 
+                                       Margin="0,0,0,15" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding IsGeminiSelected}">
+                            <TextBlock Text="Google Gemini API Key:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding GeminiApiKey}" Watermark="AIza..." Margin="0,0,0,5" Classes="outline" />
+                            <TextBlock Text="The key is encrypted locally with DataProtection." 
+                                       FontSize="11" Foreground="Gray" 
+                                       Margin="0,0,0,15" TextWrapping="Wrap" />
+                            <TextBlock Text="Model name (e.g. gemini-1.5-flash):" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding CustomModel}" Margin="0,0,0,15" />
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding IsClaudeSelected}">
+                            <TextBlock Text="Anthropic Claude API Key:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding ClaudeApiKey}" Watermark="sk-ant-..." Margin="0,0,0,5" Classes="outline" />
+                            <TextBlock Text="The key is encrypted locally with DataProtection." 
+                                       FontSize="11" Foreground="Gray" 
+                                       Margin="0,0,0,15" TextWrapping="Wrap" />
+                            <TextBlock Text="Model name (e.g. claude-3-5-sonnet-20240620):" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding CustomModel}" Margin="0,0,0,15" />
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding IsLocalSelected}">
+                            <TextBlock Text="Server URL (Chat Completions API):" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding CustomBaseUrl}" Margin="0,0,0,15" Classes="outline" />
+                            
+                            <TextBlock Text="Model name (for example, llama3):" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <TextBox Text="{Binding CustomModel}" Margin="0,0,0,15" Classes="outline" />
+                                     
+                            <TextBlock Text="Make sure your local Ollama or LM Studio server is running." 
+                                       FontSize="11" Foreground="Gray" 
+                                       Margin="0,-10,0,15" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                            <Run Text="Max retries: " />
+                            <Run Text="{Binding MaxRetries}" FontWeight="Bold" Foreground="Purple" />
+                        </TextBlock>
+                        <Slider Minimum="1" Maximum="5" Value="{Binding MaxRetries}" 
+                                TickFrequency="1" IsSnapToTickEnabled="True" Margin="10,0,10,15" />
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                            <Run Text="Parallel requests: " />
+                            <Run Text="{Binding MaxParallelRequests}" FontWeight="Bold" Foreground="Purple" />
+                        </TextBlock>
+                        <Slider Minimum="1" Maximum="5" Value="{Binding MaxParallelRequests}" 
+                                TickFrequency="1" IsSnapToTickEnabled="True" Margin="10,0,10,5" />
+                        <TextBlock Text="Use 1 for Ollama/LM Studio, 3-5 for OpenAI if your rate limit allows it." 
+                                   FontSize="11" Foreground="Gray" 
+                                   Margin="0,0,0,15" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Hybrid Mode">
+                <ScrollViewer>
+                    <StackPanel Margin="0,15,12,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <ToggleSwitch IsChecked="{Binding UseHybridMode}" Content="Enable Hybrid Mode (Local + Cloud)" FontWeight="SemiBold" />
+                        </StackPanel>
+                        
+                        <StackPanel IsVisible="{Binding UseHybridMode}">
+                            <TextBlock Text="When enabled, the translator will split strings based on their word count." 
+                                       Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
+                                       
+                            <TextBlock Text="Cloud Provider (for long strings):" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding HybridCloudProvider}" 
+                                      HorizontalAlignment="Stretch" Margin="0,0,0,15" />
+                                      
+                            <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                                <Run Text="Word count threshold: " />
+                                <Run Text="{Binding HybridWordThreshold}" FontWeight="Bold" Foreground="Purple" />
+                            </TextBlock>
+                            <Slider Minimum="1" Maximum="200" Value="{Binding HybridWordThreshold}" 
+                                    TickFrequency="5" IsSnapToTickEnabled="True" Margin="10,0,10,5" />
+                            <TextBlock Text="Strings with fewer or equal words will be sent to the primary provider (e.g. Local), strings with more words will be sent to the Cloud provider." 
+                                       FontSize="11" Foreground="Gray" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Language &amp; Style">
+                <ScrollViewer>
+                    <StackPanel Margin="0,15,12,0">
+                        <TextBlock Text="Target language:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <ComboBox ItemsSource="{Binding AvailableLanguages}" 
+                                  SelectedValue="{Binding TargetLanguage}" 
+                                  SelectedValueBinding="{Binding Code}"
+                                  HorizontalAlignment="Stretch" Margin="0,0,0,20" />
+
+                        <TextBlock Text="Translation style:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <ComboBox ItemsSource="{Binding TranslationStyles}" 
+                                  SelectedItem="{Binding TranslationStyle}" 
+                                  HorizontalAlignment="Stretch" Margin="0,0,0,20" />
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                            <Run Text="Batch size: " />
+                            <Run Text="{Binding BatchSize}" FontWeight="Bold" Foreground="Purple" />
+                        </TextBlock>
+                        <Slider Minimum="1" Maximum="50" Value="{Binding BatchSize}" 
+                                TickFrequency="1" IsSnapToTickEnabled="True" Margin="10,0,10,5" />
+                        <TextBlock Text="Lower values are slower but usually more precise. Use 5-10 for local models, 20-50 for OpenAI." 
+                                   FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <TabItem Header="Appearance">
+                <ScrollViewer>
+                    <StackPanel Margin="0,15,12,0">
+                        <TextBlock Text="Color Palette:" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <ComboBox ItemsSource="{Binding ThemePalettes}" SelectedItem="{Binding ThemePalette}" 
+                                  Margin="0,0,0,20" HorizontalAlignment="Stretch" />
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                            <Run Text="Panel opacity: " />
+                            <Run Text="{Binding UiBackgroundOpacity, StringFormat=\{0:P0\}}" FontWeight="Bold" Foreground="Purple" />
+                        </TextBlock>
+                        <Slider Minimum="0.1" Maximum="1" Value="{Binding UiBackgroundOpacity}" 
+                                TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="10,0,10,15" />
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,0,0,5">
+                            <Run Text="Corner radius: " />
+                            <Run Text="{Binding UiCornerRadius}" FontWeight="Bold" Foreground="Purple" />
+                        </TextBlock>
+                        <Slider Minimum="0" Maximum="24" Value="{Binding UiCornerRadius}" 
+                                TickFrequency="1" IsSnapToTickEnabled="True" Margin="10,0,10,5" />
+                        <TextBlock Text="Adjust the roundness of cards and buttons." 
+                                   FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Tag Protection (Regex)">
+                <StackPanel Margin="0,15,0,0">
+                    <TextBlock Text="Add custom regular expressions to protect mod-specific tags." 
+                               Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,15" />
+                    
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding NewRegex}" 
+                                 Watermark="Example: &lt;[^&gt;]+&gt;" Margin="0,0,10,0" />
+                        <Button Grid.Column="1" Command="{Binding AddRegexCommand}" Content="Add" />
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding CustomRegexes}" Height="150" BorderThickness="1">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center" />
+                                    <!-- Simplified remove button to avoid complex RelativeSource bindings -->
+                                    <Button Grid.Column="1" Command="{Binding $parent[Window].DataContext.RemoveRegexCommand}" 
+                                            CommandParameter="{Binding}" ToolTip.Tip="Delete" Background="Transparent" BorderThickness="0">
+                                        <material:MaterialIcon Kind="Delete" Foreground="Red" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <ToggleSwitch IsChecked="{Binding IsDarkMode}" Content="Dark theme" />
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <!-- Changed CommandParameter to pass the Window to code-behind -->
+                <Button Click="OnSaveClicked" Content="Save" Width="120" Background="#7E57C2" Foreground="White" CornerRadius="8" FontWeight="SemiBold" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

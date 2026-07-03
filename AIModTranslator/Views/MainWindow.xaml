@@ -1,0 +1,202 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:material="using:Material.Icons.Avalonia"
+        xmlns:local="clr-namespace:AIModTranslator.Views"
+        xmlns:vm="clr-namespace:AIModTranslator.ViewModels"
+        xmlns:models="clr-namespace:AIModTranslator.Models"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
+        x:Class="AIModTranslator.Views.MainWindow"
+        Title="LH's MCModsTranslate" Height="750" Width="1250"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppWindowBackground}"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <!-- Корневой Grid: Сайдбар слева, Контент справа -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="72" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="{DynamicResource AppPanelBackground}" BorderBrush="#333" BorderThickness="0,0,1,0" Padding="0,40,0,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <!-- Верхние действия (Файлы) -->
+                <StackPanel Grid.Row="0" Spacing="20" HorizontalAlignment="Center">
+                    <Button Command="{Binding OpenFileCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть файл локализации" Cursor="Hand">
+                        <material:MaterialIcon Kind="FileDocumentOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                    <Button Command="{Binding OpenFolderCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть папку мода" Cursor="Hand">
+                        <material:MaterialIcon Kind="FolderOpenOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                    <Button Command="{Binding OpenJarCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть JAR файл мода" Cursor="Hand">
+                        <material:MaterialIcon Kind="ZipBoxOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                    <Button Command="{Binding OpenSnbtFolderCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть папку квестов (.snbt)" Cursor="Hand">
+                        <material:MaterialIcon Kind="MapOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                    
+                    <Rectangle Height="1" Fill="#333" Margin="10,0" />
+                    
+                    <Button Command="{Binding SaveFileCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Сохранить изменения" Cursor="Hand">
+                        <material:MaterialIcon Kind="ContentSaveOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                </StackPanel>
+
+                <!-- Нижние инструменты (Translate, Glossary, TM, Settings) -->
+                <StackPanel Grid.Row="2" Spacing="20" HorizontalAlignment="Center">
+                    <Button Command="{Binding TranslateAllCommand}" CornerRadius="{DynamicResource AppCornerRadius}" Width="46" Height="46" Padding="0" ToolTip.Tip="ПЕРЕВЕСТИ ВСЁ" Cursor="Hand">
+                        <Button.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                <GradientStop Offset="0" Color="#9C27B0" />
+                                <GradientStop Offset="1" Color="#5E35B1" />
+                            </LinearGradientBrush>
+                        </Button.Background>
+                        <material:MaterialIcon Kind="Translate" Width="24" Height="24" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
+                    
+                    <Rectangle Height="1" Fill="#333" Margin="10,0" />
+                    
+                    <Button Command="{Binding OpenGlossaryCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Глоссарий" Cursor="Hand">
+                        <material:MaterialIcon Kind="BookOpenOutline" Width="26" Height="26" Foreground="#A0A0A0"/>
+                    </Button>
+                    <Button Command="{Binding OpenTMCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="База Translation Memory" Cursor="Hand">
+                        <material:MaterialIcon Kind="DatabaseOutline" Width="26" Height="26" Foreground="#A0A0A0"/>
+                    </Button>
+                    <Button Command="{Binding OpenSettingsCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Настройки" Cursor="Hand">
+                        <material:MaterialIcon Kind="CogOutline" Width="26" Height="26" Foreground="#A0A0A0"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Column="1" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="4*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Левая панель: Список строк (Cards) -->
+            <Border Grid.Column="0" Background="{DynamicResource AppPanelBackground}" CornerRadius="{DynamicResource AppCornerRadius}" Padding="15,15,2,15" BoxShadow="0 4 10 0 #40000000" Margin="0,30,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="Строки для перевода" FontSize="18" FontWeight="SemiBold" Margin="5,0,0,15" Foreground="#E0E0E0"/>
+                    
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Translations}" SelectedItem="{Binding SelectedTranslation}" Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:TranslationEntry">
+                                <Border Background="{DynamicResource AppCardBackground}" CornerRadius="8" Margin="0,0,10,8" Padding="15" BorderThickness="2"
+                                        Classes.hasErrors="{Binding HasErrors}" Classes.hasWarnings="{Binding HasWarnings}">
+                                    <Border.Styles>
+                                        <Style Selector="Border">
+                                            <Setter Property="BorderBrush" Value="Transparent" />
+                                            <Setter Property="Transitions">
+                                                <Transitions>
+                                                    <BrushTransition Property="Background" Duration="0:0:0.2" />
+                                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" />
+                                                </Transitions>
+                                            </Setter>
+                                        </Style>
+                                        <Style Selector="Border.hasWarnings">
+                                            <Setter Property="BorderBrush" Value="#FFBB00" />
+                                        </Style>
+                                        <Style Selector="Border.hasErrors">
+                                            <Setter Property="BorderBrush" Value="#FF4444" />
+                                        </Style>
+                                        <Style Selector="Border:pointerover">
+                                            <Setter Property="Background" Value="#2D2D30" />
+                                        </Style>
+                                    </Border.Styles>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <material:MaterialIcon Grid.Column="0" Kind="Translate" Foreground="#7E57C2" VerticalAlignment="Top" Margin="0,2,15,0" Width="20" Height="20" />
+                                        
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding OriginalText}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" Margin="0,0,0,4" Foreground="#E0E0E0"/>
+                                            <TextBlock Text="{Binding TranslatedText}" Foreground="#A0A0A0" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Right">
+                                            <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#888" HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding Key}" FontSize="10" Foreground="#666" HorizontalAlignment="Right" Margin="0,4,0,0" MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Background="Transparent" />
+
+            <!-- Правая панель: Детали перевода -->
+            <Border Grid.Column="2" Background="{DynamicResource AppPanelBackground}" CornerRadius="{DynamicResource AppCornerRadius}" Padding="20" BoxShadow="0 4 10 0 #40000000" Margin="0,30,0,0">
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Ключ локализации" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding SelectedTranslation.Key}" IsReadOnly="True" Margin="0,0,0,20" CornerRadius="6" BorderThickness="1" BorderBrush="#333" Background="{DynamicResource AppCardBackground}" />
+
+                        <TextBlock Text="Оригинал" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding SelectedTranslation.OriginalText}" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,20" MinHeight="80" CornerRadius="6" BorderThickness="1" BorderBrush="#333" Background="{DynamicResource AppCardBackground}" Foreground="#E0E0E0" />
+
+                        <TextBlock Text="Перевод" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding SelectedTranslation.TranslatedText, Mode=TwoWay}" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" MinHeight="100" CornerRadius="6" BorderThickness="1" BorderBrush="#7E57C2" Background="{DynamicResource AppCardBackground}" Foreground="White" FontSize="14" />
+
+                        <!-- Ошибки и Предупреждения -->
+                        <Border Background="#33FFBB00" CornerRadius="6" Padding="10" Margin="0,0,0,15" IsVisible="{Binding SelectedTranslation.HasWarnings, FallbackValue=False}">
+                            <TextBlock Text="{Binding SelectedTranslation.WarningMessage}" Foreground="#FFBB00" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" />
+                        </Border>
+                        
+                        <Border Background="#33FF4444" CornerRadius="6" Padding="10" Margin="0,0,0,15" IsVisible="{Binding SelectedTranslation.HasErrors, FallbackValue=False}">
+                            <TextBlock Text="{Binding SelectedTranslation.ErrorMessage}" Foreground="#FF4444" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" />
+                        </Border>
+
+                        <!-- Fuzzy Matching Suggestions -->
+                        <TextBlock Text="Похожие переводы (TM)" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,10,0,8" />
+                        <ListBox ItemsSource="{Binding Suggestions}" MaxHeight="250" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource AppCardBackground}" CornerRadius="8" Padding="12" Margin="0,0,0,8" BorderThickness="1" BorderBrush="#333">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding OriginalText}" FontWeight="SemiBold" TextWrapping="Wrap" FontSize="13" Foreground="#E0E0E0" Margin="0,0,0,4" />
+                                            <TextBlock Text="{Binding TranslatedText}" Foreground="#4CAF50" TextWrapping="Wrap" FontSize="13" Margin="0,0,0,6" />
+                                            <TextBlock Text="{Binding MatchPercentage, StringFormat='{}Совпадение: {0:F1}%'}" FontSize="11" Foreground="#888" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Loading Overlay -->
+        <Border Grid.ColumnSpan="2" Background="#CC121212" IsVisible="{Binding IsBusy}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="{Binding LoadingMessage}" FontSize="24" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,25" FontWeight="SemiBold"/>
+                <ProgressBar Value="{Binding TranslationProgress}" Maximum="{Binding TranslationTotal}" Height="6" Width="400" CornerRadius="3" Foreground="#7E57C2" Background="#333" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

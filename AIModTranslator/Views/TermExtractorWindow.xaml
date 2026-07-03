@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Анализ терминов (Term Extractor)" Height="550" Width="650"
+        WindowStartupLocation="CenterOwner"
+        x:Class="AIModTranslator.Views.TermExtractorWindow">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="🤖 Автоматический сборщик Глоссария" FontSize="18" FontWeight="Bold" Margin="0,0,0,5" />
+        <TextBlock Grid.Row="1" Text="{Binding StatusMessage}" Foreground="Gray" Margin="0,0,0,15" />
+
+        <DataGrid Grid.Row="2" ItemsSource="{Binding ExtractedTerms}" AutoGenerateColumns="False" Margin="0,0,0,15">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="✔" Binding="{Binding IsSelected}" Width="45" />
+                <DataGridTextColumn Header="Оригинал (EN)" Binding="{Binding Original}" Width="*" />
+                <DataGridTextColumn Header="Перевод" Binding="{Binding Translation}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <ProgressBar IsIndeterminate="True" Width="25" Height="25" Margin="0,0,15,0"
+                         IsVisible="{Binding IsBusy}" />
+            <Button Command="{Binding ExtractCommand}" Content="🔍 Анализ" Margin="0,0,10,0" />
+            <Button Click="OnAddClicked" Content="✅ Добавить в Глоссарий" />
+        </StackPanel>
+    </Grid>
+</Window>

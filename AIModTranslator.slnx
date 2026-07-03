@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AIModTranslator.Tests/AIModTranslator.Tests.csproj" />
+  <Project Path="AIModTranslator/AIModTranslator.csproj" />
+</Solution>

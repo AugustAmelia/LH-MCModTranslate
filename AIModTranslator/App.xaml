@@ -1,0 +1,18 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="AIModTranslator.App">
+    <Application.Resources>
+        <CornerRadius x:Key="AppCornerRadius">12</CornerRadius>
+        <SolidColorBrush x:Key="AppPanelBackground" Color="#CC1E1E1E" />
+        <SolidColorBrush x:Key="AppWindowBackground" Color="#FF121212" />
+        <SolidColorBrush x:Key="AppCardBackground" Color="#FF252526" />
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <themes:MaterialTheme BaseTheme="Dark" PrimaryColor="Purple" SecondaryColor="Indigo" />
+        <materialIcons:MaterialIconStyles />
+    </Application.Styles>
+</Application>

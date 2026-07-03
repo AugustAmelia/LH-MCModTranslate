@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:material="using:Material.Icons.Avalonia"
+        Title="Управление Translation Memory" Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        x:Class="AIModTranslator.Views.TranslationMemoryWindow">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="База переводов (Translation Memory)" FontSize="18" FontWeight="Bold" Margin="0,0,0,15" />
+
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            
+            <TextBox Text="{Binding SearchText}" Watermark="Поиск по оригиналу или переводу..." Grid.Column="0" Margin="0,0,10,0">
+                <TextBox.InnerRightContent>
+                    <material:MaterialIcon Kind="Magnify" Margin="5" Foreground="Gray"/>
+                </TextBox.InnerRightContent>
+            </TextBox>
+            
+            <!-- Refresh button -->
+            <Button Command="{Binding LoadEntriesCommand}" Grid.Column="1" ToolTip.Tip="Обновить">
+                <material:MaterialIcon Kind="Refresh" />
+            </Button>
+        </Grid>
+
+        <DataGrid Grid.Row="2" ItemsSource="{Binding Entries}" AutoGenerateColumns="False" Margin="0,0,0,10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Оригинал (Ключ)" Binding="{Binding OriginalText}" IsReadOnly="True" Width="*" />
+                <DataGridTextColumn Header="Перевод" Binding="{Binding TranslatedText}" Width="*" />
+                
+                <DataGridTemplateColumn Header="Действия" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding $parent[Window].DataContext.DeleteEntryCommand}" 
+                                    CommandParameter="{Binding}" ToolTip.Tip="Удалить запись" Background="Transparent" BorderThickness="0">
+                                <material:MaterialIcon Kind="Delete" Foreground="Red" />
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Всего записей в базе: " FontWeight="Bold" />
+                <TextBlock Text="{Binding TotalCount}" />
+                <TextBlock Text=" (показано до 200)" Foreground="Gray" Margin="5,0,0,0" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Command="{Binding ClearAllCommand}" Content="Очистить базу" Foreground="Red" Margin="0,0,15,0">
+                    <Button.Styles>
+                        <Style Selector="Button">
+                            <Setter Property="BorderBrush" Value="Red" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+                <Button Command="{Binding SaveChangesCommand}" CommandParameter="{Binding $parent[Window]}" Content="Сохранить и закрыть" Background="Purple" Foreground="White" />
+            </StackPanel>
+        </Grid>
+        
+        <!-- Loading Overlay -->
+        <Border Grid.RowSpan="4" Background="#88000000" IsVisible="{Binding IsBusy}" ZIndex="100">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="Обработка..." Foreground="White" FontSize="18" FontWeight="Bold" />
+                <ProgressBar IsIndeterminate="True" Margin="0,10,0,0" Width="150" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

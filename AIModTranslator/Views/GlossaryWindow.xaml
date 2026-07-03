@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:material="using:Material.Icons.Avalonia"
+        Title="Словарь терминов (Глоссарий)" Height="400" Width="500"
+        WindowStartupLocation="CenterOwner"
+        x:Class="AIModTranslator.Views.GlossaryWindow">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Задайте строгие правила перевода для ИИ" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" />
+
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Terms}" AutoGenerateColumns="False" Margin="0,0,0,10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Оригинал (EN)" Binding="{Binding OriginalTerm}" Width="*" />
+                <DataGridTextColumn Header="Перевод (RU)" Binding="{Binding TranslatedTerm}" Width="*" />
+                <DataGridTemplateColumn Header="Действие" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <!-- Use DataContext of the window to remove the term -->
+                            <Button Command="{Binding $parent[Window].DataContext.RemoveTermCommand}" 
+                                    CommandParameter="{Binding}" ToolTip.Tip="Удалить" Background="Transparent" BorderThickness="0">
+                                <material:MaterialIcon Kind="Delete" Foreground="Red" />
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Command="{Binding AddTermCommand}" Content="Добавить" Margin="0,0,10,0" />
+            <Button Command="{Binding SaveTermsCommand}" CommandParameter="{Binding $parent[Window]}" Content="Сохранить и закрыть" />
+        </StackPanel>
+    </Grid>
+</Window>

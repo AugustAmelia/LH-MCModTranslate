@@ -3,7 +3,7 @@
 ![Avalonia UI](https://img.shields.io/badge/UI-Avalonia-purple)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-blueviolet)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-GPLv3-green)
 
 **LH's MCModsTranslate** is a premium, cross-platform AI localization tool specifically designed to automatically translate Minecraft mods and modpacks. Built with C# and Avalonia UI, it brings high-quality AI translation capabilities (OpenAI, Gemini, Claude, and Local LLMs) directly to your desktop.
 
@@ -42,4 +42,4 @@ dotnet run
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
 
 ## 📝 License
-This project is open-source and available under the MIT License.
+This project is open-source and available under the GNU GPL v3 License.

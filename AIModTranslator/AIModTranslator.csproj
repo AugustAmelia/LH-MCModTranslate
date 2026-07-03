@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationIcon />
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <StartupObject />
     <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
   </PropertyGroup>
@@ -16,6 +16,7 @@
       <DependentUpon>%(Filename)</DependentUpon>
     </Compile>
     <AvaloniaResource Include="**\*.xaml" />
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
   <ItemGroup>
     <!-- Core features -->

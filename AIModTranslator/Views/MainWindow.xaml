@@ -11,6 +11,7 @@
         Title="LH's MCModsTranslate" Height="750" Width="1250"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppWindowBackground}"
+        Icon="avares://AIModTranslator/Assets/icon.ico"
         ExtendClientAreaToDecorationsHint="True">
 
     <!-- Корневой Grid: Сайдбар слева, Контент справа -->

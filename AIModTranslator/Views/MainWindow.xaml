@@ -6,13 +6,36 @@
         xmlns:local="clr-namespace:AIModTranslator.Views"
         xmlns:vm="clr-namespace:AIModTranslator.ViewModels"
         xmlns:models="clr-namespace:AIModTranslator.Models"
+        xmlns:avaloniaEdit="https://github.com/avaloniaui/avaloniaedit"
+        xmlns:behaviors="clr-namespace:AIModTranslator.Behaviors"
+        xmlns:i="clr-namespace:Avalonia.Xaml.Interactivity;assembly=Avalonia.Xaml.Interactivity"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="750"
         x:Class="AIModTranslator.Views.MainWindow"
+        x:Name="MainWindowRoot"
         Title="LH's MCModsTranslate" Height="750" Width="1250"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppWindowBackground}"
+        TransparencyLevelHint="Mica, AcrylicBlur"
         Icon="avares://AIModTranslator/Assets/icon.ico"
-        ExtendClientAreaToDecorationsHint="True">
+        ExtendClientAreaToDecorationsHint="True"
+        DragDrop.AllowDrop="True">
+    <Window.Styles>
+        <Style Selector="Button">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                    <BrushTransition Property="Background" Duration="0:0:0.2" />
+                </Transitions>
+            </Setter>
+            <Setter Property="RenderTransform" Value="scale(1)" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.05)" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.95)" />
+        </Style>
+    </Window.Styles>
 
     <!-- Корневой Grid: Сайдбар слева, Контент справа -->
     <Grid>
@@ -40,6 +63,9 @@
                     </Button>
                     <Button Command="{Binding OpenJarCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть JAR файл мода" Cursor="Hand">
                         <material:MaterialIcon Kind="ZipBoxOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
+                    </Button>
+                    <Button Command="{Binding OpenModpackCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть модпак или папку модов" Cursor="Hand">
+                        <material:MaterialIcon Kind="FolderZipOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
                     </Button>
                     <Button Command="{Binding OpenSnbtFolderCommand}" Background="Transparent" BorderThickness="0" ToolTip.Tip="Открыть папку квестов (.snbt)" Cursor="Hand">
                         <material:MaterialIcon Kind="MapOutline" Width="26" Height="26" Foreground="#E0E0E0"/>
@@ -92,23 +118,74 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Grid.Row="0" Text="Строки для перевода" FontSize="18" FontWeight="SemiBold" Margin="5,0,0,15" Foreground="#E0E0E0"/>
+                    <Grid Grid.Row="0" Margin="5,0,5,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Строки для перевода" FontSize="18" FontWeight="SemiBold" Foreground="#E0E0E0" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding StatsText}" FontSize="12" Foreground="#888" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="5,0,5,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Classes="outline" Text="{Binding SearchText}" Watermark="Поиск (ключ, текст, перевод)..." Margin="0,0,10,0">
+                            <TextBox.InnerLeftContent>
+                                <material:MaterialIcon Kind="Magnify" Width="18" Height="18" Margin="8,0,0,0" Foreground="#888" />
+                            </TextBox.InnerLeftContent>
+                        </TextBox>
+                        <Button Grid.Column="1" Width="180" Height="38" Background="{DynamicResource AppCardBackground}" CornerRadius="6" BorderThickness="1" BorderBrush="#444" Padding="12,0,8,0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" Cursor="Hand">
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                    <ListBox ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding FilterMode}" Width="170" Background="{DynamicResource AppCardBackground}" BorderThickness="0" />
+                                </Flyout>
+                            </Button.Flyout>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{Binding FilterMode}" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="14" Foreground="#E0E0E0" />
+                                <material:MaterialIcon Grid.Column="1" Kind="ChevronDown" Width="20" Height="20" Foreground="#888" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+                    </Grid>
                     
-                    <ListBox Grid.Row="1" ItemsSource="{Binding Translations}" SelectedItem="{Binding SelectedTranslation}" Background="Transparent" BorderThickness="0">
+                    <ListBox Grid.Row="2" ItemsSource="{Binding Translations}" SelectedItem="{Binding SelectedTranslation}" Background="Transparent" BorderThickness="0">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Template">
+                                    <ControlTemplate>
+                                        <ContentPresenter Content="{TemplateBinding Content}"
+                                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                    </ControlTemplate>
+                                </Setter>
+                            </Style>
+                            <Style Selector="ListBoxItem:selected Border#CardBorder">
+                                <Setter Property="BorderBrush" Value="#7E57C2" />
+                                <Setter Property="Background" Value="#2A2A35" />
+                            </Style>
+                        </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="models:TranslationEntry">
-                                <Border Background="{DynamicResource AppCardBackground}" CornerRadius="8" Margin="0,0,10,8" Padding="15" BorderThickness="2"
+                                <Border Name="CardBorder" Background="{DynamicResource AppCardBackground}" CornerRadius="8" Margin="0,0,10,8" Padding="15" BorderThickness="1"
                                         Classes.hasErrors="{Binding HasErrors}" Classes.hasWarnings="{Binding HasWarnings}">
                                     <Border.Styles>
                                         <Style Selector="Border">
                                             <Setter Property="BorderBrush" Value="Transparent" />
+                                            <Setter Property="RenderTransform" Value="scale(1)" />
                                             <Setter Property="Transitions">
                                                 <Transitions>
                                                     <BrushTransition Property="Background" Duration="0:0:0.2" />
                                                     <BrushTransition Property="BorderBrush" Duration="0:0:0.2" />
+                                                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
                                                 </Transitions>
                                             </Setter>
                                         </Style>
@@ -119,7 +196,8 @@
                                             <Setter Property="BorderBrush" Value="#FF4444" />
                                         </Style>
                                         <Style Selector="Border:pointerover">
-                                            <Setter Property="Background" Value="#2D2D30" />
+                                            <Setter Property="Background" Value="#33FFFFFF" />
+                                            <Setter Property="RenderTransform" Value="scale(1.02)" />
                                         </Style>
                                     </Border.Styles>
                                     <Grid>
@@ -158,10 +236,46 @@
                         <TextBox Text="{Binding SelectedTranslation.Key}" IsReadOnly="True" Margin="0,0,0,20" CornerRadius="6" BorderThickness="1" BorderBrush="#333" Background="{DynamicResource AppCardBackground}" />
 
                         <TextBlock Text="Оригинал" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,0,0,4" />
-                        <TextBox Text="{Binding SelectedTranslation.OriginalText}" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,20" MinHeight="80" CornerRadius="6" BorderThickness="1" BorderBrush="#333" Background="{DynamicResource AppCardBackground}" Foreground="#E0E0E0" />
+                        <Border BorderThickness="1" BorderBrush="#333" CornerRadius="6" Background="{DynamicResource AppCardBackground}" Margin="0,0,0,20" Padding="5">
+                            <avaloniaEdit:TextEditor IsReadOnly="True" WordWrap="True" SyntaxHighlighting="MinecraftLang" MinHeight="70" Foreground="#E0E0E0" Background="Transparent" FontSize="14">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:TextEditorBehavior BoundText="{Binding SelectedTranslation.OriginalText}" />
+                                </i:Interaction.Behaviors>
+                            </avaloniaEdit:TextEditor>
+                        </Border>
+
+                        <!-- Glossary Hints Panel -->
+                        <ItemsControl ItemsSource="{Binding CurrentGlossaryTerms}" Margin="0,-10,0,15">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding #MainWindowRoot.((vm:MainViewModel)DataContext).InsertGlossaryTermCommand}" 
+                                            CommandParameter="{Binding TranslatedTerm}"
+                                            Background="#2A2A2A" BorderThickness="1" BorderBrush="#7E57C2" 
+                                            CornerRadius="12" Margin="0,0,8,8" Padding="10,4" Cursor="Hand" ToolTip.Tip="Вставить термин">
+                                        <StackPanel Orientation="Horizontal">
+                                            <material:MaterialIcon Kind="BookInformationVariant" Width="14" Height="14" Foreground="#7E57C2" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{Binding OriginalTerm}" Foreground="#A0A0A0" FontSize="11" />
+                                            <TextBlock Text=" ➔ " Foreground="#555" FontSize="11" />
+                                            <TextBlock Text="{Binding TranslatedTerm}" Foreground="#E0E0E0" FontSize="12" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <TextBlock Text="Перевод" FontSize="12" FontWeight="SemiBold" Foreground="#888" Margin="0,0,0,4" />
-                        <TextBox Text="{Binding SelectedTranslation.TranslatedText, Mode=TwoWay}" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,15" MinHeight="100" CornerRadius="6" BorderThickness="1" BorderBrush="#7E57C2" Background="{DynamicResource AppCardBackground}" Foreground="White" FontSize="14" />
+                        <Border BorderThickness="1" BorderBrush="#7E57C2" CornerRadius="6" Background="{DynamicResource AppCardBackground}" Margin="0,0,0,15" Padding="5">
+                            <avaloniaEdit:TextEditor WordWrap="True" SyntaxHighlighting="MinecraftLang" MinHeight="90" Foreground="White" Background="Transparent" FontSize="14">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:TextEditorBehavior BoundText="{Binding SelectedTranslation.TranslatedText, Mode=TwoWay}" />
+                                </i:Interaction.Behaviors>
+                            </avaloniaEdit:TextEditor>
+                        </Border>
 
                         <!-- Ошибки и Предупреждения -->
                         <Border Background="#33FFBB00" CornerRadius="6" Padding="10" Margin="0,0,0,15" IsVisible="{Binding SelectedTranslation.HasWarnings, FallbackValue=False}">
@@ -169,7 +283,19 @@
                         </Border>
                         
                         <Border Background="#33FF4444" CornerRadius="6" Padding="10" Margin="0,0,0,15" IsVisible="{Binding SelectedTranslation.HasErrors, FallbackValue=False}">
-                            <TextBlock Text="{Binding SelectedTranslation.ErrorMessage}" Foreground="#FF4444" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding SelectedTranslation.ErrorMessage}" Foreground="#FF4444" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Command="{Binding AutoFixGlossaryCommand}" CommandParameter="{Binding SelectedTranslation}" ToolTip.Tip="Попытаться автоматически применить термины глоссария" Background="#FF4444" Foreground="White" BorderThickness="0" CornerRadius="4" Padding="8,4" VerticalAlignment="Top" Margin="10,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <material:MaterialIcon Kind="AutoFix" Width="14" Height="14" Margin="0,0,4,0" />
+                                        <TextBlock Text="Авто-фикс" FontSize="11" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
                         </Border>
 
                         <!-- Fuzzy Matching Suggestions -->
@@ -190,14 +316,59 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
+
+            <!-- Empty State Overlay -->
+            <Border Grid.ColumnSpan="3" Background="{DynamicResource AppPanelBackground}" CornerRadius="{DynamicResource AppCornerRadius}" IsVisible="{Binding !IsProjectLoaded}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                    <material:MaterialIcon Kind="Translate" Width="80" Height="80" Foreground="#7E57C2" HorizontalAlignment="Center" />
+                    <TextBlock Text="Добро пожаловать в AI Mod Translator!" FontSize="24" FontWeight="Bold" Foreground="#E0E0E0" HorizontalAlignment="Center" />
+                    <TextBlock Text="Начните с открытия файлов локализации или перетащите их прямо сюда." FontSize="14" Foreground="#A0A0A0" HorizontalAlignment="Center" Margin="0,0,0,20" />
+                    
+                    <WrapPanel HorizontalAlignment="Center" MaxWidth="600">
+                        <Button Command="{Binding OpenFileCommand}" Margin="10" Width="180" Height="100" CornerRadius="12" Background="{DynamicResource AppCardBackground}" Cursor="Hand">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <material:MaterialIcon Kind="FileDocumentOutline" Width="32" Height="32" Foreground="#4CAF50" Margin="0,0,0,10" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Открыть файл" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding OpenFolderCommand}" Margin="10" Width="180" Height="100" CornerRadius="12" Background="{DynamicResource AppCardBackground}" Cursor="Hand">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <material:MaterialIcon Kind="FolderOpenOutline" Width="32" Height="32" Foreground="#FF9800" Margin="0,0,0,10" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Открыть папку" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding OpenJarCommand}" Margin="10" Width="180" Height="100" CornerRadius="12" Background="{DynamicResource AppCardBackground}" Cursor="Hand">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <material:MaterialIcon Kind="ZipBoxOutline" Width="32" Height="32" Foreground="#F44336" Margin="0,0,0,10" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Открыть JAR" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
         </Grid>
 
         <!-- Loading Overlay -->
-        <Border Grid.ColumnSpan="2" Background="#CC121212" IsVisible="{Binding IsBusy}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="{Binding LoadingMessage}" FontSize="24" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,25" FontWeight="SemiBold"/>
+        <Border Grid.ColumnSpan="3" Background="#CC121212" IsVisible="{Binding IsBusy}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <!-- Круговой индикатор загрузки (работает для сохранения и подготовки) -->
+                <ProgressBar Classes="circle" IsIndeterminate="True" Width="70" Height="70" Foreground="#7E57C2" />
+                
+                <TextBlock Text="{Binding LoadingMessage}" FontSize="24" Foreground="White" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                
+                <!-- Линейный прогресс (только для массового перевода) -->
                 <ProgressBar Value="{Binding TranslationProgress}" Maximum="{Binding TranslationTotal}" Height="6" Width="400" CornerRadius="3" Foreground="#7E57C2" Background="#333" />
             </StackPanel>
         </Border>
+
+        <!-- Drag & Drop Overlay -->
+        <Grid Grid.ColumnSpan="3" IsVisible="{Binding IsDragOver}" Background="#E6121212" IsHitTestVisible="False">
+            <Rectangle Stroke="#7E57C2" StrokeThickness="4" StrokeDashArray="4,4" RadiusX="20" RadiusY="20" Margin="40" Fill="#227E57C2" />
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <material:MaterialIcon Kind="FileDownloadOutline" Width="120" Height="120" Foreground="#7E57C2" HorizontalAlignment="Center" Margin="0,0,0,20" />
+                <TextBlock Text="Отпустите файлы для импорта" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
+                <TextBlock Text="Поддерживаются: .lang, .json, .properties, .jar и папки" FontSize="16" Foreground="#A0A0A0" HorizontalAlignment="Center" Margin="0,10,0,0" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

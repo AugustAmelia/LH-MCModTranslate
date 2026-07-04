@@ -5,9 +5,13 @@ namespace AIModTranslator.Views;
 
 public partial class TranslationMemoryWindow : Window
 {
-    public TranslationMemoryWindow(TranslationMemoryViewModel viewModel)
+    public TranslationMemoryWindow()
     {
         Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
+    }
+
+    public TranslationMemoryWindow(TranslationMemoryViewModel viewModel) : this()
+    {
         DataContext = viewModel;
     }
 }

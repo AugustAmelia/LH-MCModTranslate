@@ -3,6 +3,9 @@
         xmlns:material="using:Material.Icons.Avalonia"
         Title="Управление Translation Memory" Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackground}"
+        TransparencyLevelHint="Mica, AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True"
         x:Class="AIModTranslator.Views.TranslationMemoryWindow">
     <Grid Margin="10">
         <Grid.RowDefinitions>

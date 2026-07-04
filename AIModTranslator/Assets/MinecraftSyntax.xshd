@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="MinecraftLang" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+    <Color name="Variable" foreground="#FFBB00" fontWeight="bold" />
+    <Color name="ColorCode" foreground="#7E57C2" fontWeight="bold" />
+    <Color name="Newline" foreground="#4CAF50" fontWeight="bold" />
+
+    <RuleSet>
+        <Rule color="Variable">
+            (%[0-9]*\$?[a-zA-Z])|(\{[0-9]+\})
+        </Rule>
+        <Rule color="ColorCode">
+            [§&amp;][0-9a-fk-or]
+        </Rule>
+        <Rule color="Newline">
+            \\n
+        </Rule>
+    </RuleSet>
+</SyntaxDefinition>

@@ -5,9 +5,13 @@ namespace AIModTranslator.Views;
 
 public partial class GlossaryWindow : Window
 {
-    public GlossaryWindow(GlossaryViewModel viewModel)
+    public GlossaryWindow()
     {
         Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
+    }
+
+    public GlossaryWindow(GlossaryViewModel viewModel) : this()
+    {
         DataContext = viewModel;
     }
 }

@@ -127,4 +127,44 @@ public class QAService
             entry.WarningMessage = string.Empty;
         }
     }
+
+    public bool TryAutoFixGlossary(TranslationEntry entry)
+    {
+        if (string.IsNullOrWhiteSpace(entry.TranslatedText) || string.IsNullOrWhiteSpace(entry.OriginalText)) return false;
+
+        bool fixedAny = false;
+        string translated = entry.TranslatedText;
+
+        foreach (var term in _glossaryCache)
+        {
+            if (string.IsNullOrWhiteSpace(term.OriginalTerm) || string.IsNullOrWhiteSpace(term.TranslatedTerm))
+                continue;
+
+            if (entry.OriginalText.Contains(term.OriginalTerm, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!translated.Contains(term.TranslatedTerm, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (translated.Contains(term.OriginalTerm, StringComparison.OrdinalIgnoreCase))
+                    {
+                        translated = Regex.Replace(translated, Regex.Escape(term.OriginalTerm), term.TranslatedTerm, RegexOptions.IgnoreCase);
+                        fixedAny = true;
+                    }
+                    else
+                    {
+                        translated += $" ({term.TranslatedTerm})";
+                        fixedAny = true;
+                    }
+                }
+            }
+        }
+
+        if (fixedAny)
+        {
+            entry.TranslatedText = translated;
+            Validate(entry);
+            return true;
+        }
+
+        return false;
+    }
 }

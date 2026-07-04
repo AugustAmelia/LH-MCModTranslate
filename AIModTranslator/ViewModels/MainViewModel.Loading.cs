@@ -61,6 +61,7 @@ public partial class MainViewModel
             IsBusy = true;
             LoadingMessage = "Loading file...";
             CurrentFileName = System.IO.Path.GetFileName(_currentFilePath);
+            _allTranslations.Clear();
             Translations.Clear();
 
             var loadedEntries = await _currentFileService.LoadFileAsync(_currentFilePath);
@@ -76,7 +77,8 @@ public partial class MainViewModel
         {
             IsBusy = false;
             CurrentFileName = string.Empty;
-            if (Translations.Count > 0) ShowDashboard = false;
+            ApplyFilter();
+            if (_allTranslations.Count > 0) ShowDashboard = false;
         }
     }
 
@@ -117,6 +119,64 @@ public partial class MainViewModel
         }
     }
 
+    private async Task LoadModpackPathAsync(string path)
+    {
+        _currentFilePath = path;
+        _loadedJarOriginalName = System.IO.Path.GetFileNameWithoutExtension(path) ?? "Modpack";
+        _isJarLoaded = true; 
+        _loadedJarTempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AIModTranslator", Guid.NewGuid().ToString());
+        System.IO.Directory.CreateDirectory(_loadedJarTempPath);
+
+        try
+        {
+            IsBusy = true;
+            LoadingMessage = "Processing modpack...";
+            _allTranslations.Clear();
+            Translations.Clear();
+            
+            string sourceFolder = path;
+            
+            if (System.IO.File.Exists(path) && path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                LoadingMessage = "Extracting ZIP archive...";
+                _logService.Info($"Extracting Modpack ZIP: {path}");
+                await Task.Run(() => System.IO.Compression.ZipFile.ExtractToDirectory(path, _loadedJarTempPath, overwriteFiles: true));
+                sourceFolder = _loadedJarTempPath;
+            }
+
+            LoadingMessage = "Scanning for JAR files...";
+            var jarFiles = System.IO.Directory.GetFiles(sourceFolder, "*.jar", System.IO.SearchOption.AllDirectories);
+            _logService.Info($"Found {jarFiles.Length} JAR file(s) in modpack.");
+
+            foreach (var jar in jarFiles)
+            {
+                string jarName = System.IO.Path.GetFileNameWithoutExtension(jar);
+                string extractPath = System.IO.Path.Combine(_loadedJarTempPath, "jars", jarName);
+                
+                try
+                {
+                    await Task.Run(() => System.IO.Compression.ZipFile.ExtractToDirectory(jar, extractPath, overwriteFiles: true));
+                }
+                catch (Exception ex)
+                {
+                    _logService.Warn($"Skipped JAR {jar}: {ex.Message}");
+                }
+            }
+
+            await LoadFromDirectoryAsync(_loadedJarTempPath);
+        }
+        catch (Exception ex)
+        {
+            _logService.Error($"Failed to process modpack {path}: {ex.Message}");
+            await _dialogService.ShowMessageAsync("Error", $"Failed to process modpack: {ex.Message}");
+            IsBusy = false;
+        }
+        finally
+        {
+            CurrentFileName = string.Empty;
+        }
+    }
+
     private async Task AddEntriesAsync(IEnumerable<TranslationEntry> entries, string filePath)
     {
         foreach (var entry in entries)
@@ -130,9 +190,19 @@ public partial class MainViewModel
                 entry.TranslatedText = memMatch;
                 entry.Status = "MemoryMatch";
             }
+            else
+            {
+                var fuzzyMatches = await _tmService.GetFuzzyMatchesAsync(entry.OriginalText, 0.95, 1);
+                if (fuzzyMatches.Count > 0)
+                {
+                    entry.TranslatedText = fuzzyMatches[0].Entry.TranslatedText;
+                    entry.Status = "FuzzyMatch";
+                }
+            }
 
-            Translations.Add(entry);
+            _allTranslations.Add(entry);
         }
+        await RunOnUiThreadAsync(() => ApplyFilter());
     }
 
     private static async Task RunOnUiThreadAsync(Action action)

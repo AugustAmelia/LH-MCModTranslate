@@ -142,6 +142,26 @@ public partial class App : Application
                 panelColor = isDark ? Avalonia.Media.Color.FromRgb(30, 30, 30) : Avalonia.Media.Color.FromRgb(255, 255, 255);
                 cardColor = isDark ? Avalonia.Media.Color.FromRgb(45, 45, 45) : Avalonia.Media.Color.FromRgb(240, 240, 240);
                 break;
+            case "Cyberpunk Edge":
+                windowColor = isDark ? Avalonia.Media.Color.FromRgb(15, 5, 20) : Avalonia.Media.Color.FromRgb(250, 240, 255);
+                panelColor = isDark ? Avalonia.Media.Color.FromRgb(25, 10, 35) : Avalonia.Media.Color.FromRgb(245, 230, 255);
+                cardColor = isDark ? Avalonia.Media.Color.FromRgb(40, 15, 60) : Avalonia.Media.Color.FromRgb(255, 255, 255);
+                break;
+            case "Forest Oasis":
+                windowColor = isDark ? Avalonia.Media.Color.FromRgb(10, 20, 15) : Avalonia.Media.Color.FromRgb(245, 252, 248);
+                panelColor = isDark ? Avalonia.Media.Color.FromRgb(15, 30, 20) : Avalonia.Media.Color.FromRgb(235, 248, 240);
+                cardColor = isDark ? Avalonia.Media.Color.FromRgb(25, 45, 35) : Avalonia.Media.Color.FromRgb(255, 255, 255);
+                break;
+            case "Midnight Neon":
+                windowColor = isDark ? Avalonia.Media.Color.FromRgb(5, 10, 25) : Avalonia.Media.Color.FromRgb(240, 245, 255);
+                panelColor = isDark ? Avalonia.Media.Color.FromRgb(10, 15, 35) : Avalonia.Media.Color.FromRgb(230, 240, 255);
+                cardColor = isDark ? Avalonia.Media.Color.FromRgb(20, 30, 55) : Avalonia.Media.Color.FromRgb(255, 255, 255);
+                break;
+            case "Royal Crimson":
+                windowColor = isDark ? Avalonia.Media.Color.FromRgb(25, 5, 10) : Avalonia.Media.Color.FromRgb(255, 240, 245);
+                panelColor = isDark ? Avalonia.Media.Color.FromRgb(35, 10, 15) : Avalonia.Media.Color.FromRgb(255, 230, 235);
+                cardColor = isDark ? Avalonia.Media.Color.FromRgb(55, 15, 25) : Avalonia.Media.Color.FromRgb(255, 255, 255);
+                break;
             case "Vanilla":
             default:
                 windowColor = isDark ? Avalonia.Media.Color.FromRgb(18, 18, 18) : Avalonia.Media.Color.FromRgb(245, 245, 245);
@@ -150,9 +170,10 @@ public partial class App : Application
                 break;
         }
 
-        byte alpha = (byte)(config.UIBackgroundOpacity * 255);
-        Current.Resources["AppPanelBackground"] = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, panelColor.R, panelColor.G, panelColor.B));
-        Current.Resources["AppWindowBackground"] = new Avalonia.Media.SolidColorBrush(windowColor);
+        byte panelAlpha = (byte)(config.UIBackgroundOpacity * 255);
+        byte windowAlpha = config.UIBackgroundOpacity < 1.0 ? (byte)(config.UIBackgroundOpacity * 200 + 55) : (byte)255;
+        Current.Resources["AppPanelBackground"] = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(panelAlpha, panelColor.R, panelColor.G, panelColor.B));
+        Current.Resources["AppWindowBackground"] = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(windowAlpha, windowColor.R, windowColor.G, windowColor.B));
         Current.Resources["AppCardBackground"] = new Avalonia.Media.SolidColorBrush(cardColor);
 
         var materialTheme = Current.Styles.OfType<Material.Styles.Themes.MaterialTheme>().FirstOrDefault();
@@ -197,6 +218,22 @@ public partial class App : Application
                 case "Sakura":
                     materialTheme.PrimaryColor = Material.Colors.PrimaryColor.Pink;
                     materialTheme.SecondaryColor = Material.Colors.SecondaryColor.DeepPurple;
+                    break;
+                case "Cyberpunk Edge":
+                    materialTheme.PrimaryColor = Material.Colors.PrimaryColor.Pink;
+                    materialTheme.SecondaryColor = Material.Colors.SecondaryColor.Purple;
+                    break;
+                case "Forest Oasis":
+                    materialTheme.PrimaryColor = Material.Colors.PrimaryColor.Green;
+                    materialTheme.SecondaryColor = Material.Colors.SecondaryColor.LightGreen;
+                    break;
+                case "Midnight Neon":
+                    materialTheme.PrimaryColor = Material.Colors.PrimaryColor.Blue;
+                    materialTheme.SecondaryColor = Material.Colors.SecondaryColor.Cyan;
+                    break;
+                case "Royal Crimson":
+                    materialTheme.PrimaryColor = Material.Colors.PrimaryColor.Red;
+                    materialTheme.SecondaryColor = Material.Colors.SecondaryColor.Amber;
                     break;
                 case "Vanilla":
                 default:

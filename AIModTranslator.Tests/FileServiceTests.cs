@@ -23,18 +23,30 @@ public class FileServiceTests
 
         var service = new JsonFileService();
         var entries = await service.LoadFileAsync(inputPath);
+        
+        foreach (var e in entries)
+        {
+            e.FilePath = inputPath;
+        }
+
         entries[0].TranslatedText = "Тестовый предмет";
 
         await service.SaveFileAsync(outputPath, entries);
 
-        entries.Should().ContainSingle();
+        entries.Should().HaveCount(2);
         entries[0].Key.Should().Be("item.example");
         entries[0].OriginalText.Should().Be("Example Item");
+        entries[1].Key.Should().Be("nested.value");
+        entries[1].OriginalText.Should().Be("Skipped");
 
         var savedJson = JsonNode.Parse(await File.ReadAllTextAsync(outputPath))!.AsObject();
         savedJson["item.example"]!.GetValue<string>().Should().Be("Тестовый предмет");
-        savedJson.ContainsKey("numeric").Should().BeFalse();
-        savedJson.ContainsKey("nested").Should().BeFalse();
+        savedJson.ContainsKey("numeric").Should().BeTrue();
+        savedJson["numeric"]!.GetValue<int>().Should().Be(42);
+        
+        // Ensure nested structure was parsed, but we didn't translate "nested.value" in the test, so it should be preserved
+        savedJson.ContainsKey("nested").Should().BeTrue();
+        savedJson["nested"]!.AsObject()["value"]!.GetValue<string>().Should().Be("Skipped");
     }
 
     [Fact]

@@ -82,7 +82,11 @@ public partial class SettingsViewModel : ObservableObject
         "Dracula",
         "Nord",
         "Solarized",
-        "Sakura"
+        "Sakura",
+        "Cyberpunk Edge",
+        "Forest Oasis",
+        "Midnight Neon",
+        "Royal Crimson"
     };
 
     public List<string> Providers { get; } = new() { "OpenAI", "Gemini", "Claude", "Ollama", "LM Studio" };

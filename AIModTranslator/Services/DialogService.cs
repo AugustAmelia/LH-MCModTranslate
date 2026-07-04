@@ -125,4 +125,23 @@ public class DialogService : IDialogService
         
         return tcs.Task;
     }
+
+    private Avalonia.Controls.Notifications.WindowNotificationManager? _notificationManager;
+
+    public void ShowToast(string title, string message, Avalonia.Controls.Notifications.NotificationType type = Avalonia.Controls.Notifications.NotificationType.Information, int expirationSeconds = 3)
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow != null)
+        {
+            if (_notificationManager == null)
+            {
+                _notificationManager = new Avalonia.Controls.Notifications.WindowNotificationManager(desktop.MainWindow)
+                {
+                    Position = Avalonia.Controls.Notifications.NotificationPosition.BottomRight,
+                    MaxItems = 4
+                };
+            }
+            
+            _notificationManager.Show(new Avalonia.Controls.Notifications.Notification(title, message, type, TimeSpan.FromSeconds(expirationSeconds)));
+        }
+    }
 }

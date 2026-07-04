@@ -74,8 +74,63 @@ public partial class MainViewModel : ObservableObject
     public bool LoadingProgressVisibility => TranslationTotal == 0;
     public bool TranslationProgressVisibility => TranslationTotal > 0;
 
+    public readonly List<TranslationEntry> _allTranslations = new();
+
     [ObservableProperty]
     private ObservableCollection<TranslationEntry> _translations = new();
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private string _filterMode = "Все";
+
+    public string[] FilterOptions { get; } = { "Все", "Непереведенные", "С ошибками", "Переведенные" };
+
+    [ObservableProperty]
+    private string _statsText = string.Empty;
+
+    [ObservableProperty]
+    private bool _isDragOver;
+
+    public bool IsProjectLoaded => _allTranslations.Count > 0;
+
+    partial void OnSearchTextChanged(string value) => ApplyFilter();
+    partial void OnFilterModeChanged(string value) => ApplyFilter();
+
+    public void ApplyFilter()
+    {
+        var filtered = _allTranslations.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var lowerQuery = SearchText.ToLowerInvariant();
+            filtered = filtered.Where(t => 
+                (t.Key?.ToLowerInvariant().Contains(lowerQuery) == true) ||
+                (t.OriginalText?.ToLowerInvariant().Contains(lowerQuery) == true) ||
+                (t.TranslatedText?.ToLowerInvariant().Contains(lowerQuery) == true));
+        }
+
+        switch (FilterMode)
+        {
+            case "Непереведенные":
+                filtered = filtered.Where(t => string.IsNullOrWhiteSpace(t.TranslatedText));
+                break;
+            case "С ошибками":
+                filtered = filtered.Where(t => t.HasErrors || t.HasWarnings);
+                break;
+            case "Переведенные":
+                filtered = filtered.Where(t => !string.IsNullOrWhiteSpace(t.TranslatedText));
+                break;
+        }
+
+        var results = filtered.ToList();
+        Translations.Clear();
+        foreach (var r in results) Translations.Add(r);
+
+        StatsText = $"Показано: {results.Count} / Всего: {_allTranslations.Count}";
+        OnPropertyChanged(nameof(IsProjectLoaded));
+    }
 
     [ObservableProperty]
     private TranslationEntry? _selectedTranslation;
@@ -83,12 +138,55 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<AIModTranslator.Models.FuzzyMatchItem> _suggestedTranslations = new();
 
+    [ObservableProperty]
+    private ObservableCollection<AIModTranslator.Data.GlossaryEntry> _currentGlossaryTerms = new();
+
     partial void OnSelectedTranslationChanged(TranslationEntry? value)
     {
         SuggestedTranslations.Clear();
+        CurrentGlossaryTerms.Clear();
         if (value == null || string.IsNullOrWhiteSpace(value.OriginalText)) return;
 
         _ = LoadFuzzySuggestionsAsync(value.OriginalText);
+        _ = FindGlossaryTermsAsync(value.OriginalText);
+    }
+
+    private async Task FindGlossaryTermsAsync(string originalText)
+    {
+        try
+        {
+            var glossaryService = App.Current?.Services?.GetRequiredService<IGlossaryService>();
+            if (glossaryService == null) return;
+            
+            var allTerms = await glossaryService.GetAllTermsAsync();
+            var lowerOriginal = originalText.ToLowerInvariant();
+            
+            var found = allTerms.Where(t => lowerOriginal.Contains(t.OriginalTerm.ToLowerInvariant())).ToList();
+            
+            await RunOnUiThreadAsync(() =>
+            {
+                CurrentGlossaryTerms.Clear();
+                foreach (var term in found) CurrentGlossaryTerms.Add(term);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logService.Error($"Failed to find glossary terms: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void InsertGlossaryTerm(string translation)
+    {
+        if (SelectedTranslation != null && !string.IsNullOrWhiteSpace(translation))
+        {
+            if (string.IsNullOrWhiteSpace(SelectedTranslation.TranslatedText))
+                SelectedTranslation.TranslatedText = translation;
+            else
+                SelectedTranslation.TranslatedText += " " + translation;
+                
+            _qaService.Validate(SelectedTranslation);
+        }
     }
 
     private async Task LoadFuzzySuggestionsAsync(string originalText)
@@ -190,7 +288,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ExtractTermsAsync()
     {
-        if (Translations.Count == 0)
+        if (_allTranslations.Count == 0)
         {
             await _dialogService.ShowMessageAsync("Внимание", "Сначала загрузите файлы мода.");
             return;
@@ -274,7 +372,7 @@ public partial class MainViewModel : ObservableObject
                 IsBusy = true;
                 LoadingMessage = "Экспорт базы переводов...";
                 await _tmService.ExportToJsonAsync(path);
-                await _dialogService.ShowMessageAsync("Успех", "База переводов успешно экспортирована!");
+                _dialogService.ShowToast("Успех", "База переводов успешно экспортирована!", Avalonia.Controls.Notifications.NotificationType.Success);
             }
             catch (Exception ex)
             {
@@ -309,7 +407,7 @@ public partial class MainViewModel : ObservableObject
                 IsBusy = true;
                 LoadingMessage = "Импорт базы переводов...";
                 await _tmService.ImportFromJsonAsync(path);
-                await _dialogService.ShowMessageAsync("Успех", "База переводов успешно импортирована!");
+                _dialogService.ShowToast("Успех", "База переводов успешно импортирована!", Avalonia.Controls.Notifications.NotificationType.Success);
                 TmCount = await _tmService.GetTotalCountAsync();
             }
             catch (Exception ex)
@@ -383,10 +481,31 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task OpenModpackAsync()
+    {
+        var sp = GetStorageProvider();
+        if (sp == null) return;
+
+        var result = await sp.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a Modpack ZIP or Folder",
+            AllowMultiple = false
+        });
+
+        if (result.Count > 0)
+        {
+            var path = result[0].TryGetLocalPath();
+            if (!string.IsNullOrEmpty(path))
+                await LoadModpackPathAsync(path);
+        }
+    }
+
     private async Task LoadFromDirectoryAsync(string directoryPath)
     {
         IsBusy = true;
         LoadingMessage = "Сканирование файлов локализации...";
+        _allTranslations.Clear();
         Translations.Clear();
 
         try
@@ -411,6 +530,9 @@ public partial class MainViewModel : ObservableObject
                         {
                             entry.FilePath = file;
                             entry.FileName = System.IO.Path.GetFileName(file);
+                            
+                            var relativePath = System.IO.Path.GetRelativePath(directoryPath, file);
+                            entry.RelativeResourcePath = relativePath.Replace('\\', '/');
 
                             var memMatch = await _tmService.GetTranslationAsync(entry.OriginalText);
                             if (!string.IsNullOrEmpty(memMatch))
@@ -418,7 +540,16 @@ public partial class MainViewModel : ObservableObject
                                 entry.TranslatedText = memMatch;
                                 entry.Status = "MemoryMatch";
                             }
-                            Translations.Add(entry);
+                            else
+                            {
+                                var fuzzyMatches = await _tmService.GetFuzzyMatchesAsync(entry.OriginalText, 0.95, 1);
+                                if (fuzzyMatches.Count > 0)
+                                {
+                                    entry.TranslatedText = fuzzyMatches[0].Entry.TranslatedText;
+                                    entry.Status = "FuzzyMatch";
+                                }
+                            }
+                            _allTranslations.Add(entry);
                         }
                     }
                     catch (Exception ex)
@@ -430,7 +561,9 @@ public partial class MainViewModel : ObservableObject
                 }
             }
 
-            if (Translations.Count == 0)
+            ApplyFilter();
+
+            if (_allTranslations.Count == 0)
             {
                 _logService.Warn($"No localization files found in {directoryPath}.");
                 await _dialogService.ShowMessageAsync("Пусто", "В выбранной папке не найдено файлов локализации.\n\nПрограмма ищет файлы в папках 'lang/' (*.json, *.lang) и файлы квестов (*.snbt).");
@@ -466,7 +599,7 @@ public partial class MainViewModel : ObservableObject
 
         if (ext == ".json")
         {
-            return fullPath.Contains("/lang/");
+            return fullPath.Contains("/lang/") || fullPath.Contains("/patchouli_books/");
         }
 
         return false;
@@ -488,7 +621,7 @@ public partial class MainViewModel : ObservableObject
         {
             const string message = "All strings are already translated.";
             _logService.Info(message);
-            await _dialogService.ShowMessageAsync("Done", message);
+            _dialogService.ShowToast("Успех", message, Avalonia.Controls.Notifications.NotificationType.Success);
             return;
         }
 
@@ -519,7 +652,8 @@ public partial class MainViewModel : ObservableObject
                                               .Select((entry, index) => new TranslationWorkItem(entry, index)).ToList();
                 
                 int batchNumber = 1;
-                foreach (var chunk in shortStrings.Chunk(batchSize))
+                int localBatchSize = (config.Provider == "Ollama" || config.Provider == "LM Studio") ? Math.Min(batchSize, 5) : batchSize;
+                foreach (var chunk in shortStrings.Chunk(localBatchSize))
                 {
                     batches.Add(new TranslationBatch(batchNumber++, chunk.ToList(), null));
                 }
@@ -538,6 +672,12 @@ public partial class MainViewModel : ObservableObject
             }
 
             _logService.Info($"Starting translation: {untranslated.Count} strings, {batches.Count} batches, parallel={maxParallelRequests}.");
+            if (config.UseHybridMode)
+            {
+                var shortStringsCount = untranslated.Count(t => t.OriginalText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Length <= config.HybridWordThreshold);
+                var longStringsCount = untranslated.Count - shortStringsCount;
+                _logService.Info($"Hybrid Savings: {shortStringsCount} items routed to {config.Provider} (Local/Free), {longStringsCount} items to {config.HybridCloudProvider} (Cloud/Paid).");
+            }
 
             using var semaphore = new SemaphoreSlim(maxParallelRequests);
             var tasks = batches.Select(async batch =>
@@ -558,10 +698,11 @@ public partial class MainViewModel : ObservableObject
 
                     await RunOnUiThreadAsync(() =>
                     {
+                        string usedProvider = batch.ProviderOverride ?? config.Provider;
                         for (int j = 0; j < batch.Items.Count; j++)
                         {
                             batch.Items[j].Entry.TranslatedText = translatedTexts[j];
-                            batch.Items[j].Entry.Status = "AutoTranslated";
+                            batch.Items[j].Entry.Status = $"AutoTranslated ({usedProvider})";
                             _qaService.Validate(batch.Items[j].Entry);
                         }
 
@@ -606,26 +747,38 @@ public partial class MainViewModel : ObservableObject
     private async Task RunQAAsync()
     {
         await _qaService.LoadGlossaryCacheAsync();
-        foreach (var entry in Translations)
+        foreach (var entry in _allTranslations)
         {
             _qaService.Validate(entry);
         }
 
-        var errorCount = Translations.Count(t => t.HasErrors);
+        var errorCount = _allTranslations.Count(t => t.HasErrors);
         _logService.Info($"QA completed. Errors: {errorCount}.");
+    }
+
+    [RelayCommand]
+    private async Task AutoFixGlossaryAsync(TranslationEntry entry)
+    {
+        if (entry == null) return;
+        
+        await _qaService.LoadGlossaryCacheAsync();
+        _qaService.TryAutoFixGlossary(entry);
+        // Validate is already called inside TryAutoFixGlossary if it fixed anything,
+        // but let's call it anyway to ensure UI updates.
+        _qaService.Validate(entry);
     }
 
     [RelayCommand]
     private async Task SaveFileAsync()
     {
-        if (Translations.Count == 0)
+        if (_allTranslations.Count == 0)
         {
-            await _dialogService.ShowMessageAsync("Внимание", "Нет данных для сохранения.");
+            _logService.Warn("No translations to save.");
             return;
         }
 
         await RunQAAsync();
-        if (Translations.Any(t => t.HasErrors))
+        if (_allTranslations.Any(t => t.HasErrors))
         {
             var result = await _dialogService.ShowConfirmAsync("Предупреждение", "Найдены ошибки QA (отсутствуют технические теги в переводах). Строки с ошибками подсвечены красным.\n\nВы уверены, что хотите сохранить файл с ошибками?");
             if (!result)
@@ -643,36 +796,24 @@ public partial class MainViewModel : ObservableObject
             string targetLang = config.TargetLanguage;
             string localeCode = GetMinecraftLocaleCode(targetLang);
 
-            var groupedByFile = Translations.Where(t => !string.IsNullOrEmpty(t.FilePath)).GroupBy(t => t.FilePath);
-            
-            foreach (var group in groupedByFile)
+            bool createResourcePack = false;
+            if (_isJarLoaded)
             {
-                string extension = System.IO.Path.GetExtension(group.Key).ToLowerInvariant();
-                var service = _fileServices.FirstOrDefault(s => s.SupportedExtensions.Contains(extension));
-                if (service != null)
-                {
-                    string newFilePath = GetTranslatedFilePath(group.Key, localeCode);
-                    await service.SaveFileAsync(newFilePath, group);
-                }
+                createResourcePack = await _dialogService.ShowConfirmAsync("Выбор формата", "Создать Resource Pack (.zip) с переводами?\n\n'Да' - Сгенерировать Ресурспак (Безопасно, не ломает исходные файлы).\n'Нет' - Пересобрать исходный архив целиком.");
             }
 
-            var toSaveToTm = Translations
-                .Where(t => !string.IsNullOrWhiteSpace(t.TranslatedText))
-                .Select(t => (t.OriginalText, t.TranslatedText));
-            
-            await _tmService.SaveTranslationsAsync(toSaveToTm);
-            TmCount = await _tmService.GetTotalCountAsync();
+            var groupedByFile = _allTranslations.Where(t => !string.IsNullOrEmpty(t.FilePath)).GroupBy(t => t.FilePath);
 
-            if (_isJarLoaded)
+            if (createResourcePack)
             {
                 var sp = GetStorageProvider();
                 if (sp != null)
                 {
                     var file = await sp.SaveFilePickerAsync(new FilePickerSaveOptions
                     {
-                        Title = "Сохранить переведённый JAR мод",
-                        SuggestedFileName = $"{_loadedJarOriginalName}_{localeCode}.jar",
-                        DefaultExtension = ".jar"
+                        Title = "Сохранить Resource Pack",
+                        SuggestedFileName = $"{_loadedJarOriginalName}_{localeCode}_ResourcePack.zip",
+                        DefaultExtension = ".zip"
                     });
 
                     if (file != null)
@@ -680,22 +821,112 @@ public partial class MainViewModel : ObservableObject
                         var path = file.TryGetLocalPath();
                         if (!string.IsNullOrEmpty(path))
                         {
-                            LoadingMessage = "Упаковка JAR...";
-                            if (System.IO.File.Exists(path))
-                                System.IO.File.Delete(path);
+                            LoadingMessage = "Генерация Ресурспака...";
                             
-                            await Task.Run(() => System.IO.Compression.ZipFile.CreateFromDirectory(
-                                _loadedJarTempPath, path, System.IO.Compression.CompressionLevel.Optimal, false));
+                            var rpTempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "AIModTranslator_RP", Guid.NewGuid().ToString());
+                            System.IO.Directory.CreateDirectory(rpTempDir);
+                            System.IO.File.WriteAllText(System.IO.Path.Combine(rpTempDir, "pack.mcmeta"), "{\n  \"pack\": {\n    \"pack_format\": 15,\n    \"description\": \"AI Translated Resource Pack\"\n  }\n}");
+
+                            foreach (var group in groupedByFile)
+                            {
+                                string extension = System.IO.Path.GetExtension(group.Key).ToLowerInvariant();
+                                var service = _fileServices.FirstOrDefault(s => s.SupportedExtensions.Contains(extension));
+                                if (service != null)
+                                {
+                                    var firstEntry = group.First();
+                                    string rpRelativePath = string.Empty;
+                                    
+                                    if (!string.IsNullOrEmpty(firstEntry.RelativeResourcePath))
+                                    {
+                                        int assetsIndex = firstEntry.RelativeResourcePath.Replace('\\', '/').IndexOf("assets/");
+                                        if (assetsIndex >= 0)
+                                        {
+                                            rpRelativePath = firstEntry.RelativeResourcePath.Substring(assetsIndex);
+                                        }
+                                    }
+                                    
+                                    if (!string.IsNullOrEmpty(rpRelativePath))
+                                    {
+                                        string dir = System.IO.Path.GetDirectoryName(rpRelativePath) ?? "";
+                                        string ext = System.IO.Path.GetExtension(rpRelativePath);
+                                        string translatedRpPath = System.IO.Path.Combine(dir, localeCode + ext);
+                                        
+                                        string fullDestPath = System.IO.Path.Combine(rpTempDir, translatedRpPath);
+                                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fullDestPath)!);
+                                        
+                                        await service.SaveFileAsync(fullDestPath, group);
+                                    }
+                                    else
+                                    {
+                                        // Fallback in-place for files not in assets
+                                        string newFilePath = GetTranslatedFilePath(group.Key, localeCode);
+                                        await service.SaveFileAsync(newFilePath, group);
+                                    }
+                                }
+                            }
                             
-                            await _dialogService.ShowMessageAsync("Успех", $"JAR мод успешно сохранён:\n{path}");
+                            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+                            await Task.Run(() => System.IO.Compression.ZipFile.CreateFromDirectory(rpTempDir, path, System.IO.Compression.CompressionLevel.Optimal, false));
+                            
+                            _dialogService.ShowToast("Успех", $"Ресурспак успешно сохранён:\n{path}", Avalonia.Controls.Notifications.NotificationType.Success);
                         }
                     }
                 }
             }
             else
             {
-                await _dialogService.ShowMessageAsync("Успех", $"Файлы перевода ({localeCode}) успешно сохранены рядом с оригиналами!");
+                foreach (var group in groupedByFile)
+                {
+                    string extension = System.IO.Path.GetExtension(group.Key).ToLowerInvariant();
+                    var service = _fileServices.FirstOrDefault(s => s.SupportedExtensions.Contains(extension));
+                    if (service != null)
+                    {
+                        string newFilePath = GetTranslatedFilePath(group.Key, localeCode);
+                        await service.SaveFileAsync(newFilePath, group);
+                    }
+                }
+
+                if (_isJarLoaded)
+                {
+                    var sp = GetStorageProvider();
+                    if (sp != null)
+                    {
+                        var file = await sp.SaveFilePickerAsync(new FilePickerSaveOptions
+                        {
+                            Title = "Сохранить переведённый JAR/ZIP",
+                            SuggestedFileName = $"{_loadedJarOriginalName}_{localeCode}.zip",
+                            DefaultExtension = ".zip"
+                        });
+
+                        if (file != null)
+                        {
+                            var path = file.TryGetLocalPath();
+                            if (!string.IsNullOrEmpty(path))
+                            {
+                                LoadingMessage = "Упаковка архива...";
+                                if (System.IO.File.Exists(path))
+                                    System.IO.File.Delete(path);
+                                
+                                await Task.Run(() => System.IO.Compression.ZipFile.CreateFromDirectory(
+                                    _loadedJarTempPath, path, System.IO.Compression.CompressionLevel.Optimal, false));
+                                
+                                _dialogService.ShowToast("Успех", $"Архив успешно сохранён:\n{path}", Avalonia.Controls.Notifications.NotificationType.Success);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _dialogService.ShowToast("Успех", $"Файлы перевода ({localeCode}) успешно сохранены рядом с оригиналами!", Avalonia.Controls.Notifications.NotificationType.Success);
+                }
             }
+
+            var toSaveToTm = _allTranslations
+                .Where(t => !string.IsNullOrWhiteSpace(t.OriginalText) && !string.IsNullOrWhiteSpace(t.TranslatedText))
+                .Select(t => (t.OriginalText, t.TranslatedText));
+            
+            await _tmService.SaveTranslationsAsync(toSaveToTm);
+            TmCount = await _tmService.GetTotalCountAsync();
         }
         catch (Exception ex)
         {

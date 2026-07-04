@@ -1,8 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:material="using:Material.Icons.Avalonia"
-        Title="Словарь терминов (Глоссарий)" Height="400" Width="500"
+        Title="Глоссарий" Height="500" Width="650"
         WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackground}"
+        TransparencyLevelHint="Mica, AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True"
         x:Class="AIModTranslator.Views.GlossaryWindow">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -32,6 +35,7 @@
         </DataGrid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Command="{Binding ImportVanillaGlossaryCommand}" Content="База Vanilla" Margin="0,0,10,0" ToolTip.Tip="Загрузить стандартные термины Minecraft" />
             <Button Command="{Binding AddTermCommand}" Content="Добавить" Margin="0,0,10,0" />
             <Button Command="{Binding SaveTermsCommand}" CommandParameter="{Binding $parent[Window]}" Content="Сохранить и закрыть" />
         </StackPanel>

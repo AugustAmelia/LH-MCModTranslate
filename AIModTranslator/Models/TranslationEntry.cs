@@ -29,6 +29,9 @@ public partial class TranslationEntry : ObservableObject
     private string _fileName = string.Empty;
 
     [ObservableProperty]
+    private string _relativeResourcePath = string.Empty;
+
+    [ObservableProperty]
     private bool _hasErrors;
 
     [ObservableProperty]

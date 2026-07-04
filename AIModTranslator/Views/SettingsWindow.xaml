@@ -5,6 +5,9 @@
         WindowStartupLocation="CenterOwner"
         SizeToContent="WidthAndHeight"
         CanResize="False"
+        Background="{DynamicResource AppWindowBackground}"
+        TransparencyLevelHint="Mica, AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True"
         x:Class="AIModTranslator.Views.SettingsWindow">
     
     <Grid Margin="20">
